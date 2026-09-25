@@ -1,48 +1,29 @@
 package com.example.zensai.controller;
 
-import com.example.zensai.domain.RecordData;
 import com.example.zensai.dto.RecordDto;
-import com.example.zensai.repository.RecordDataRepository;
+import com.example.zensai.service.RecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/records")
 @RequiredArgsConstructor
 public class RecordController {
 
-    private final RecordDataRepository repository;
+    private final RecordService recordService;
 
     @GetMapping
     public ResponseEntity<List<RecordDto>> getAllRecords() {
-        List<RecordDto> dtos = repository.findAll().stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok(recordService.getAllRecords());
     }
 
     @PostMapping
-    public ResponseEntity<RecordDto> createRecord(@RequestBody RecordDto requestDto) {
+    public ResponseEntity<RecordDto> createRecord(
+            @RequestBody RecordDto requestDto) {
 
-        RecordData entity = new RecordData();
-        entity.setName(requestDto.getName());
-        entity.setDetails(requestDto.getDetails());
-
-        RecordData savedEntity = repository.save(entity);
-
-        return ResponseEntity.ok(mapToDto(savedEntity));
+        return ResponseEntity.ok(recordService.createRecord(requestDto));
     }
-
-    private RecordDto mapToDto(RecordData entity) {
-        RecordDto dto = new RecordDto();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setDetails(entity.getDetails());
-        return dto;
-    }
-
 }
