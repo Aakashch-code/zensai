@@ -24,7 +24,7 @@ public class Users implements UserDetails {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "workspace_id")
+    @JoinColumn(name = "workspace_id", nullable = true)
     private Workspace workspace;
 
     @Column(unique = true, nullable = false)

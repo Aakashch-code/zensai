@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
 
-public interface RecordDataRepository extends JpaRepository<RecordData, UUID> {
+public interface RecordDataRepository extends JpaRepository<RecordData, Long> {
 
     Page<RecordData> findByNameContainingIgnoreCase(String name, Pageable pageable);
+    Page<RecordData> findByNameContainingIgnoreCaseOrDetailsContainingIgnoreCase(
+            String name, String details, Pageable pageable);
 }

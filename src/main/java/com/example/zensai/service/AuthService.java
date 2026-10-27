@@ -1,11 +1,13 @@
 package com.example.zensai.service;
 
+import com.example.zensai.domain.Customer;
 import com.example.zensai.domain.Users;
 import com.example.zensai.domain.UsersRole;
 import com.example.zensai.domain.Workspace;
 import com.example.zensai.dto.AuthDto.*;
 import com.example.zensai.exception.DuplicateResourceException;
 import com.example.zensai.exception.ResourceNotFoundException;
+import com.example.zensai.repository.CustomerRepository;
 import com.example.zensai.repository.UserRepository;
 import com.example.zensai.repository.WorkspaceRepository;
 import com.example.zensai.security.JwtUtil;
@@ -27,6 +29,7 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final AuthenticationManager authManager;
     private final JwtUtil jwtUtil;
+    private final CustomerRepository customerRepo;
 
     @Transactional
     public String register(RegisterRequest request) {
@@ -48,23 +51,21 @@ public class AuthService {
             throw new DuplicateResourceException("Username or Email is already in use");
         }
 
-        Workspace workspace;
+        Workspace workspace = null;
 
         if (request.getRole() == UsersRole.ORGANIZER) {
             if (request.getWorkspaceName() == null || request.getWorkspaceName().trim().isEmpty()) {
-                throw new IllegalArgumentException("Workspace name is required for ORGANIZER role");
+                throw new IllegalArgumentException("Store/Workspace name is required for ORGANIZER role");
             }
-
             workspace = new Workspace();
             workspace.setName(request.getWorkspaceName());
             workspace.setInviteCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             workspaceRepo.save(workspace);
 
-        } else {
+        } else if (request.getRole() == UsersRole.ADMIN) {
             if (request.getInviteCode() == null || request.getInviteCode().trim().isEmpty()) {
-                throw new IllegalArgumentException("Invite code is required to join an existing workspace");
+                throw new IllegalArgumentException("Invite code is required for ADMIN to join a Store");
             }
-
             workspace = workspaceRepo.findByInviteCode(request.getInviteCode())
                     .orElseThrow(() -> new ResourceNotFoundException("Invalid invite code provided"));
         }
@@ -75,9 +76,16 @@ public class AuthService {
         );
         userRepo.save(user);
 
+        if (request.getRole() == UsersRole.CUSTOMER) {
+            Customer customerProfile = new Customer();
+            customerProfile.setUser(user);
+            customerRepo.save(customerProfile);
+            return "Customer registered successfully";
+        }
+
         return request.getRole() == UsersRole.ORGANIZER
-                ? "Registered! Invite code: " + workspace.getInviteCode()
-                : "Registered successfully";
+                ? "Store Registered! Invite code for admins: " + workspace.getInviteCode()
+                : "Admin joined store successfully";
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -93,7 +101,7 @@ public class AuthService {
         Users user = userRepo.findByUsernameOrEmail(request.getLogin())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found in the system"));
 
-        String workspaceId = user.getWorkspace().getId().toString();
+        String workspaceId = user.getWorkspace() != null ? user.getWorkspace().getId().toString() : "GLOBAL";
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name(), workspaceId);
 
         return new AuthResponse(token);

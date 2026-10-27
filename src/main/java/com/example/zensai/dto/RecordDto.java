@@ -8,7 +8,7 @@ import java.util.UUID;
 public class RecordDto {
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private UUID id;
+    private Long id;
     private String name;
     private String details;
 }

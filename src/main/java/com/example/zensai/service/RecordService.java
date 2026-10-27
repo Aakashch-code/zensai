@@ -17,11 +17,12 @@ public class RecordService {
 
     private final RecordDataRepository repository;
 
-    public Page<RecordDto> getRecords(String nameFilter, Pageable pageable) {
+    public Page<RecordDto> getRecords(String searchFilter, Pageable pageable) {
         Page<RecordData> recordPage;
 
-        if (nameFilter != null && !nameFilter.trim().isEmpty()) {
-            recordPage = repository.findByNameContainingIgnoreCase(nameFilter, pageable);
+        if (searchFilter != null && !searchFilter.trim().isEmpty()) {
+            recordPage = repository.findByNameContainingIgnoreCaseOrDetailsContainingIgnoreCase(
+                    searchFilter, searchFilter, pageable);
         } else {
             recordPage = repository.findAll(pageable);
         }
@@ -29,7 +30,7 @@ public class RecordService {
         return recordPage.map(this::mapToDto);
     }
 
-    public RecordDto getRecordById(UUID id) {
+    public RecordDto getRecordById(Long id) {
         return repository.findById(id)
                 .map(this::mapToDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Record not found with ID: " + id));
@@ -37,12 +38,10 @@ public class RecordService {
 
     public RecordDto createRecord(RecordDto requestDto) {
 
-        // 1. Validation Check: Prevent null or empty 'name'
         if (requestDto.getName() == null || requestDto.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Record name cannot be null or empty");
         }
 
-        // 2. Validation Check: Prevent null or empty 'details' (if details is also required)
         if (requestDto.getDetails() == null || requestDto.getDetails().trim().isEmpty()) {
             throw new IllegalArgumentException("Record details cannot be null or empty");
         }

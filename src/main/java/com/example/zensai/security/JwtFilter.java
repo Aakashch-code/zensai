@@ -28,19 +28,25 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
 
+        // NEW: Check if the frontend is trying to browse a specific store
+        String requestedStoreId = request.getHeader("X-Store-ID");
+
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
 
             try {
                 UUID userId = jwtUtil.extractUserId(token);
                 String role = jwtUtil.extractRole(token);
-                String tenantId = jwtUtil.extractTenantId(token);
+                String userTenantId = jwtUtil.extractTenantId(token);
 
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
                     if (jwtUtil.isTokenValid(token, userId)) {
 
-                        if (tenantId != null) {
-                            TenantContext.setCurrentTenant(tenantId);
+                        // MARKETPLACE ROUTING: Customers see everything. Admins see only their store.
+                        if ("CUSTOMER".equals(role)) {
+                            TenantContext.setCurrentTenant("GLOBAL");
+                        } else {
+                            TenantContext.setCurrentTenant(userTenantId);
                         }
 
                         var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
@@ -59,7 +65,6 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } finally {
-
             TenantContext.clear();
         }
     }

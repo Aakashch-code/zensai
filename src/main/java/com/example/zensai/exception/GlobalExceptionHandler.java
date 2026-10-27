@@ -1,5 +1,6 @@
 package com.example.zensai.exception;
 
+import org.springframework.security.access.AccessDeniedException;
 import com.example.zensai.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,5 +54,17 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred"
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // Add this to your GlobalExceptionHandler.java
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                "You do not have permission to access this resource"
+        );
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
 }
